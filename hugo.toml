@@ -16,6 +16,7 @@ logoCursorDisabled = false
 
 # Subtitle for home
 homeSubtitle = "Mohammed Ahsal Paravath Abdul Asharaf"
+homepage = "plastan.github.io/page"
 
 # Set disableReadOtherPosts to true in order to hide the links to other posts.
 disableReadOtherPosts = false
