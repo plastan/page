@@ -8,10 +8,8 @@ A self proclaimed chill person.
 
 _There are a lot of cools stuffs everywhere._
 
-*und ich glaube , dass unser welt ist ambesser mit cool sachen.*
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
 
 <script>
