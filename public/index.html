@@ -42,17 +42,13 @@
 
 	<meta itemprop="name" content="meee">
 	<meta itemprop="description" content="A self proclaimed chill person.
-There are a lot of cools stuffs everywhere.
-und ich glaube , dass unser welt ist ambesser mit cool sachen.">
-	<meta itemprop="datePublished" content="2014-09-28T00:00:00+00:00">
-	<meta itemprop="dateModified" content="2014-09-28T00:00:00+00:00">
-	<meta itemprop="wordCount" content="25">
+There are a lot of cools stuffs everywhere.">
+	<meta itemprop="wordCount" content="13">
 
 	<meta name="twitter:card" content="summary">
 	<meta name="twitter:title" content="meee">
 	<meta name="twitter:description" content="A self proclaimed chill person.
-There are a lot of cools stuffs everywhere.
-und ich glaube , dass unser welt ist ambesser mit cool sachen.">
+There are a lot of cools stuffs everywhere.">
 
 
 
@@ -60,8 +56,7 @@ und ich glaube , dass unser welt ist ambesser mit cool sachen.">
 	<meta property="og:site_name" content="Ahsal">
 	<meta property="og:title" content="meee">
 	<meta property="og:description" content="A self proclaimed chill person.
-There are a lot of cools stuffs everywhere.
-und ich glaube , dass unser welt ist ambesser mit cool sachen.">
+There are a lot of cools stuffs everywhere.">
 	<meta property="og:locale" content="en_us">
 	<meta property="og:type" content="website">
 
@@ -141,8 +136,262 @@ und ich glaube , dass unser welt ist ambesser mit cool sachen.">
 
 
             
-    <div class="content-center">
-        <main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script >
+let flock;
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  createP('Drag the mouse to generate new boids.');
+
+  flock = new Flock();
+
+  
+  for (let i = 0; i < 100; i++) {
+    let b = new Boid(width / 2, height / 2);
+    flock.addBoid(b);
+  }
+
+  describe(
+    'A group of bird-like objects, represented by triangles, moving across the canvas, modeling flocking behavior.'
+  );
+}
+
+function draw() {
+  background(0);
+  flock.run();
+}
+
+
+function mouseDragged() {
+  flock.addBoid(new Boid(mouseX, mouseY));
+}
+
+
+class Flock {
+  constructor() {
+    
+    this.boids = [];
+  }
+
+  run() {
+    for (let boid of this.boids) {
+      
+      boid.run(this.boids);
+    }
+  }
+
+  addBoid(b) {
+    this.boids.push(b);
+  }
+}
+
+class Boid {
+  constructor(x, y) {
+    this.acceleration = createVector(0, 0);
+    this.velocity = createVector(random(-1, 1), random(-1, 1));
+    this.position = createVector(x, y);
+    this.size = 3.0;
+
+    
+    this.maxSpeed = 3;
+
+    
+    this.maxForce = 0.05;
+    colorMode(HSB);
+    this.color = color(random(256), 255, 255);
+  }
+
+  run(boids) {
+    this.flock(boids);
+    this.update();
+    this.borders();
+    this.render();
+  }
+
+  applyForce(force) {
+    
+    this.acceleration.add(force);
+  }
+
+  
+  flock(boids) {
+    let separation = this.separate(boids);
+    let alignment = this.align(boids);
+    let cohesion = this.cohesion(boids);
+
+    
+    separation.mult(1.5);
+    alignment.mult(1.0);
+    cohesion.mult(1.0);
+
+    
+    this.applyForce(separation);
+    this.applyForce(alignment);
+    this.applyForce(cohesion);
+  }
+
+  
+  update() {
+    
+    this.velocity.add(this.acceleration);
+
+    
+    this.velocity.limit(this.maxSpeed);
+    this.position.add(this.velocity);
+
+    
+    this.acceleration.mult(0);
+  }
+
+  
+  
+  seek(target) {
+    
+    let desired = p5.Vector.sub(target, this.position);
+
+    
+    desired.normalize();
+    desired.mult(this.maxSpeed);
+
+    
+    let steer = p5.Vector.sub(desired, this.velocity);
+
+    
+    steer.limit(this.maxForce);
+    return steer;
+  }
+
+  render() {
+    
+    let theta = this.velocity.heading() + radians(90);
+    fill(this.color);
+    stroke(255);
+    push();
+    translate(this.position.x, this.position.y);
+    rotate(theta);
+    beginShape();
+    vertex(0, -this.size * 2);
+    vertex(-this.size, this.size * 2);
+    vertex(this.size, this.size * 2);
+    endShape(CLOSE);
+    pop();
+  }
+
+  
+  borders() {
+    if (this.position.x < -this.size) {
+      this.position.x = width + this.size;
+    }
+
+    if (this.position.y < -this.size) {
+      this.position.y = height + this.size;
+    }
+
+    if (this.position.x > width + this.size) {
+      this.position.x = -this.size;
+    }
+
+    if (this.position.y > height + this.size) {
+      this.position.y = -this.size;
+    }
+  }
+
+  
+  
+  separate(boids) {
+    let desiredSeparation = 25.0;
+    let steer = createVector(0, 0);
+    let count = 0;
+
+    
+    for (let boid of boids) {
+      let distanceToNeighbor = p5.Vector.dist(this.position, boid.position);
+
+      
+      if (distanceToNeighbor > 0 && distanceToNeighbor < desiredSeparation) {
+        
+        let diff = p5.Vector.sub(this.position, boid.position);
+        diff.normalize();
+
+        
+        diff.div(distanceToNeighbor);
+        steer.add(diff);
+
+        
+        count++;
+      }
+    }
+
+    
+    if (count > 0) {
+      steer.div(count);
+    }
+
+    
+    if (steer.mag() > 0) {
+      
+      steer.normalize();
+      steer.mult(this.maxSpeed);
+      steer.sub(this.velocity);
+      steer.limit(this.maxForce);
+    }
+    return steer;
+  }
+
+  
+  
+  align(boids) {
+    let neighborDistance = 50;
+    let sum = createVector(0, 0);
+    let count = 0;
+    for (let i = 0; i < boids.length; i++) {
+      let d = p5.Vector.dist(this.position, boids[i].position);
+      if (d > 0 && d < neighborDistance) {
+        sum.add(boids[i].velocity);
+        count++;
+      }
+    }
+    if (count > 0) {
+      sum.div(count);
+      sum.normalize();
+      sum.mult(this.maxSpeed);
+      let steer = p5.Vector.sub(sum, this.velocity);
+      steer.limit(this.maxForce);
+      return steer;
+    } else {
+      return createVector(0, 0);
+    }
+  }
+
+  
+  
+  cohesion(boids) {
+    let neighborDistance = 50;
+    let sum = createVector(0, 0); 
+    let count = 0;
+    for (let i = 0; i < boids.length; i++) {
+      let d = p5.Vector.dist(this.position, boids[i].position);
+      if (d > 0 && d < neighborDistance) {
+        sum.add(boids[i].position); 
+        count++;
+      }
+    }
+    if (count > 0) {
+      sum.div(count);
+      return this.seek(sum); 
+    } else {
+      return createVector(0, 0);
+    }
+  }
+} 
+    </script>
+
+
+  <div id="sketch-container" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;background:#1d1d1f;"/>
+    <div class="content-center" >
+
+        <main >
             <div>
                 
 
@@ -150,26 +399,12 @@ und ich glaube , dass unser welt ist ambesser mit cool sachen.">
 
                 
             </div>
-<p>A self proclaimed chill person.</p>
+        <p>A self proclaimed chill person.</p>
 <p><em>There are a lot of cools stuffs everywhere.</em></p>
-<p><em>und ich glaube , dass unser welt ist ambesser mit cool sachen.</em></p>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-<script>
-new p5(function(p) {
-  p.setup = function() {
-    p.canvas = p.createCanvas(p.windowWidth,p.windowHeight).parent('sketch-container');
-    p.canvas.position= (0,0);
-  };
-
-  p.draw = function() {
-    p.background(220);
-    p.ellipse(p.mouseX, p.mouseY, 50, 50);
-  };
-});
-</script>
 
 
         </main>
+
     </div>
 
 
@@ -192,10 +427,6 @@ new p5(function(p) {
 
 
 
-<script src="https://cdn.jsdelivr.net/npm/p5@1.11.13/lib/p5.min.js"></script>
-
-
-<script src="sketch.js"></script>
 
 
 
